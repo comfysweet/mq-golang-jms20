@@ -127,11 +127,6 @@ func CreateConnectionFactoryFromJSON(connectionInfoLocn string, apiKeyLocn strin
 		return ConnectionFactoryImpl{}, errUser
 	}
 
-	password, errPassword := parseStringValueFromJSON("apiKey", apiKeyMap, apiKeyLocn)
-	if errPassword != nil {
-		return ConnectionFactoryImpl{}, errPassword
-	}
-
 	// Use the parsed values to initialize the attributes of the Impl object.
 	cf = ConnectionFactoryImpl{
 		QMName:      qmName,
@@ -139,8 +134,14 @@ func CreateConnectionFactoryFromJSON(connectionInfoLocn string, apiKeyLocn strin
 		PortNumber:  port,
 		ChannelName: appChannel,
 		UserName:    username,
-		Password:    password,
 	}
+
+	password, errPassword := parseStringValueFromJSON("apiKey", apiKeyMap, apiKeyLocn)
+	if errPassword != nil {
+		return cf, nil
+	}
+
+	cf.Password = password
 
 	// Give the populated ConnectionFactory back to the caller.
 	return cf, nil
