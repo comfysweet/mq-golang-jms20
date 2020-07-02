@@ -14,7 +14,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
-	"os"
 )
 
 // CreateConnectionFactoryFromDefaultJSONFiles is a utility method that creates
@@ -50,17 +49,6 @@ func CreateConnectionFactoryFromDefaultJSONFiles() (cf ConnectionFactoryImpl, er
 // directory of this repository and populate them with the details of your own
 // queue manager.
 func CreateConnectionFactoryFromJSON(connectionInfoLocn string, apiKeyLocn string) (cf ConnectionFactoryImpl, err error) {
-
-	// If the caller has not explicitly specified a path in which to find these
-	// files then assume that they are in the default location (/Downloads)
-	if connectionInfoLocn == "" {
-		connectionInfoLocn = os.Getenv("HOME") + "/Downloads/connection_info.json"
-	}
-
-	if apiKeyLocn == "" {
-		apiKeyLocn = os.Getenv("HOME") + "/Downloads/applicationApiKey.json"
-	}
-
 	// Attempt to read the connection info file at the specified location.
 	// If we get an error then there is no way to proceed successfully, so
 	// terminate the program immediately.
@@ -110,38 +98,39 @@ func CreateConnectionFactoryFromJSON(connectionInfoLocn string, apiKeyLocn strin
 		return ConnectionFactoryImpl{}, errChannel
 	}
 
-	// Now unmarshall and parse out the values from the api key file (that
-	// contains the username/password credentials).
-	var apiKeyMap map[string]*json.RawMessage
-	err = json.Unmarshal(apiKeyContent, &apiKeyMap)
-
-	if err != nil {
-		log.Print("Failure during unmarshalling file from JSON: " + apiKeyLocn)
-		return ConnectionFactoryImpl{}, err
-	}
-
-	var username, password string
-
-	username, errUser := parseStringValueFromJSON("mqUsername", apiKeyMap, apiKeyLocn)
-	if errUser != nil {
-		return ConnectionFactoryImpl{}, errUser
-	}
-
 	// Use the parsed values to initialize the attributes of the Impl object.
 	cf = ConnectionFactoryImpl{
 		QMName:      qmName,
 		Hostname:    hostname,
 		PortNumber:  port,
 		ChannelName: appChannel,
-		UserName:    username,
 	}
 
-	password, errPassword := parseStringValueFromJSON("apiKey", apiKeyMap, apiKeyLocn)
-	if errPassword != nil {
-		return cf, nil
-	}
+	if apiKeyLocn != "" {
+		// Now unmarshall and parse out the values from the api key file (that
+		// contains the username/password credentials).
+		var apiKeyMap map[string]*json.RawMessage
+		err = json.Unmarshal(apiKeyContent, &apiKeyMap)
 
-	cf.Password = password
+		if err != nil {
+			log.Print("Failure during unmarshalling file from JSON: " + apiKeyLocn)
+			return ConnectionFactoryImpl{}, err
+		}
+
+		var username, password string
+
+		username, errUser := parseStringValueFromJSON("mqUsername", apiKeyMap, apiKeyLocn)
+		if errUser != nil {
+			return ConnectionFactoryImpl{}, errUser
+		}
+		cf.UserName = username
+		password, errPassword := parseStringValueFromJSON("apiKey", apiKeyMap, apiKeyLocn)
+		if errPassword != nil {
+			return cf, nil
+		}
+
+		cf.Password = password
+	}
 
 	// Give the populated ConnectionFactory back to the caller.
 	return cf, nil
