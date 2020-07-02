@@ -33,6 +33,10 @@ func CreateConnectionFactoryFromDefaultJSONFiles() (cf ConnectionFactoryImpl, er
 	return CreateConnectionFactoryFromJSON("", "")
 }
 
+func CreateConnectionFactoryFromJSONFiles(connectionInfoLocn string) (cf ConnectionFactoryImpl, err error) {
+	return CreateConnectionFactoryFromJSON(connectionInfoLocn, "")
+}
+
 // CreateConnectionFactoryFromJSON is a utility method that creates
 // a JMS ConnectionFactory object that is populated with properties from values
 // stored in two external files on the file system.
@@ -55,12 +59,6 @@ func CreateConnectionFactoryFromJSON(connectionInfoLocn string, apiKeyLocn strin
 	connInfoContent, err := ioutil.ReadFile(connectionInfoLocn)
 	if err != nil {
 		log.Print("Error reading file from " + connectionInfoLocn)
-		return ConnectionFactoryImpl{}, err
-	}
-
-	apiKeyContent, err := ioutil.ReadFile(apiKeyLocn)
-	if err != nil {
-		log.Print("Error reading file from " + apiKeyLocn)
 		return ConnectionFactoryImpl{}, err
 	}
 
@@ -107,6 +105,12 @@ func CreateConnectionFactoryFromJSON(connectionInfoLocn string, apiKeyLocn strin
 	}
 
 	if apiKeyLocn != "" {
+		apiKeyContent, err := ioutil.ReadFile(apiKeyLocn)
+		if err != nil {
+			log.Print("Error reading file from " + apiKeyLocn)
+			return ConnectionFactoryImpl{}, err
+		}
+
 		// Now unmarshall and parse out the values from the api key file (that
 		// contains the username/password credentials).
 		var apiKeyMap map[string]*json.RawMessage
